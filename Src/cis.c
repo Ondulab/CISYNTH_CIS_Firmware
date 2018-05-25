@@ -71,7 +71,7 @@ void cisInit(void)
 
 
 	/*##-2- Enable DAC selected channel and associated DMA #############################*/
-	if (HAL_DAC_Start_DMA(&hdac1, DAC1_CHANNEL_1, (uint32_t *)aADCxConvertedData + 100, 1500/*ADC_CONVERTED_DATA_BUFFER_SIZE - 4*/, DAC_ALIGN_12B_R) != HAL_OK)
+	if (HAL_DAC_Start_DMA(&hdac1, DAC1_CHANNEL_1, (uint32_t *)aADCxConvertedData + 100, 2300/*ADC_CONVERTED_DATA_BUFFER_SIZE - 4*/, DAC_ALIGN_12B_R) != HAL_OK)
 	{
 		/* Start DMA Error */
 		Error_Handler();
@@ -306,7 +306,7 @@ void timesBaseInit(void)
 		_Error_Handler(__FILE__, __LINE__);
 	}
 
-	pSimplePWMChannelCfg.Pulse = uwPrescalerValue / 2;
+	pSimplePWMChannelCfg.Pulse = 10;
 	pSimplePWMChannelCfg.Polarity = HRTIM_OUTPUTPOLARITY_HIGH;
 	pSimplePWMChannelCfg.IdleLevel = HRTIM_OUTPUTIDLELEVEL_INACTIVE;
 	if (HAL_HRTIM_SimplePWMChannelConfig(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_OUTPUT_TA1, &pSimplePWMChannelCfg) != HAL_OK)

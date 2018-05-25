@@ -9,7 +9,7 @@
 #ifndef __CIS_H__
 #define __CIS_H__
 
-#define HI_TIME_FREQ 		(2000000)
+#define HI_TIME_FREQ 		(1000000)
 #define DAC_TIME_FREQ 		(500)
 #define CIS_PIXELS			(10200)
 #define ADC_CONVERTED_DATA_BUFFER_SIZE	(CIS_PIXELS + 4)
