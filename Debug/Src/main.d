@@ -44,9 +44,7 @@ Src/main.o: ../Src/main.c \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/hrtim.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/tim.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usart.h \
- /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usb_device.h \
- /mnt/Data/Documents/Workspace_AC6/CIS_H7/Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
- /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usbd_conf.h \
+ /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usb_otg.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/gpio.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/cis.h
 
@@ -140,11 +138,7 @@ Src/main.o: ../Src/main.c \
 
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usart.h:
 
-/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usb_device.h:
-
-/mnt/Data/Documents/Workspace_AC6/CIS_H7/Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h:
-
-/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usbd_conf.h:
+/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usb_otg.h:
 
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/gpio.h:
 

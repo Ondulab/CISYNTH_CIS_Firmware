@@ -22,8 +22,8 @@ extern DAC_HandleTypeDef hdac1;
 /* Private variables ---------------------------------------------------------*/
 __IO uint16_t aADCxConvertedData[ADC_CONVERTED_DATA_BUFFER_SIZE] = {0};
 const uint16_t aEscalator16bit[32] = {0x1100, 0x3322, 0x5544, 0x7766, 0x9988, 0xBBAA, 0xDDCC, 0xFFEE, 0xDDEE, 0xBBCC, 0x99AA, 0x7788, 0x5566, 0x3344, 0x1122};
-static __IO uint16_t pixel_cnt = 0;
-static __IO uint16_t color_selector = 4;
+static __IO uint32_t pixel_cnt = 0;
+static __IO uint16_t color_selector = 3;
 
 static DAC_ChannelConfTypeDef sConfig;
 
@@ -43,9 +43,6 @@ void cisInit(void)
 	{
 		Error_Handler();
 	}
-
-	//	HAL_HRTIM_SimplePWMStart(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_OUTPUT_TA1);
-	//	HAL_HRTIM_SimplePWMStart(&hhrtim, HRTIM_TIMERINDEX_TIMER_B, HRTIM_OUTPUT_TB1);
 
 	static DAC_ChannelConfTypeDef sConfig;
 
@@ -74,7 +71,7 @@ void cisInit(void)
 
 
 	/*##-2- Enable DAC selected channel and associated DMA #############################*/
-	if (HAL_DAC_Start_DMA(&hdac1, DAC1_CHANNEL_1, (uint32_t *)aADCxConvertedData + 4, ADC_CONVERTED_DATA_BUFFER_SIZE - 4, DAC_ALIGN_12B_R) != HAL_OK)
+	if (HAL_DAC_Start_DMA(&hdac1, DAC1_CHANNEL_1, (uint32_t *)aADCxConvertedData + 100, 1500/*ADC_CONVERTED_DATA_BUFFER_SIZE - 4*/, DAC_ALIGN_12B_R) != HAL_OK)
 	{
 		/* Start DMA Error */
 		Error_Handler();
@@ -110,16 +107,73 @@ void cisInit(void)
  */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 {
-	static int cnt = 2;
-	cnt++;
+	static uint16_t aADCxConvertedValue = 0;
+	static uint8_t colorIsSet = 0;
+
 	/* Read the converted value */
-	aADCxConvertedData[cnt] = HAL_ADC_GetValue(&hadc1);
+	aADCxConvertedValue = HAL_ADC_GetValue(&hadc1);
 
-	__HAL_HRTIM_SETCOMPARE(&hhrtim, 0, HRTIM_COMPAREUNIT_1, aADCxConvertedData[cnt]);
+	__HAL_HRTIM_SETCOMPARE(&hhrtim, 0, HRTIM_COMPAREUNIT_1, aADCxConvertedValue);
 
-	if (cnt > (ADC_CONVERTED_DATA_BUFFER_SIZE))
+	if (!colorIsSet)
 	{
-		cnt = 2;
+		if (color_selector == 0)
+		{
+			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
+			colorIsSet = 1;
+		}
+		else if (color_selector == 1)
+		{
+			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
+			colorIsSet = 1;
+		}
+		else if (color_selector == 2)
+		{
+			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
+			colorIsSet = 1;
+		}
+		else if (color_selector == 3)
+		{
+			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_SET);
+			colorIsSet = 1;
+		}
+		else if (color_selector == 4)
+		{
+			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
+			colorIsSet = 1;
+		}
+	}
+
+	if (pixel_cnt == 0)
+	{
+		HAL_GPIO_WritePin(CIS_SP_GPIO_Port, CIS_SP_Pin, GPIO_PIN_SET);
+	}
+	else if (pixel_cnt == 4)
+	{
+		HAL_GPIO_WritePin(CIS_SP_GPIO_Port, CIS_SP_Pin, GPIO_PIN_RESET);;
+	}
+	else if (pixel_cnt > 4)
+	{
+		aADCxConvertedData[pixel_cnt] = aADCxConvertedValue;
+	}
+
+	pixel_cnt++;
+	if (pixel_cnt > (ADC_CONVERTED_DATA_BUFFER_SIZE - 1))
+	{
+		pixel_cnt = 0;
+		color_selector++;
+		if (color_selector > 2)
+		{
+			color_selector = 0;
+		}
+		colorIsSet = 0;
 	}
 }
 
@@ -229,68 +283,96 @@ void timesBaseInit(void)
 		_Error_Handler(__FILE__, __LINE__);
 	}
 
-	/* Start channel 1 in Output compare mode */
-	if(HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_1) != HAL_OK)
+//	/* Start channel 1 in Output compare mode */
+//	if(HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_1) != HAL_OK)
+//	{
+//		/* Starting Error */
+//		Error_Handler();
+//	}
+//
+//	HAL_TIM_Base_Start_IT(&htim1);
+
+	HRTIM_TimeBaseCfgTypeDef pTimeBaseCfg;
+	HRTIM_SimplePWMChannelCfgTypeDef pSimplePWMChannelCfg;
+
+	uwPrescalerValue = (uint32_t) ((SystemCoreClock / 2) / (HI_TIME_FREQ * 4));
+
+	pTimeBaseCfg.Period = uwPrescalerValue;
+	pTimeBaseCfg.RepetitionCounter = 0x00;
+	pTimeBaseCfg.PrescalerRatio = HRTIM_PRESCALERRATIO_DIV1;
+	pTimeBaseCfg.Mode = HRTIM_MODE_CONTINUOUS;
+	if (HAL_HRTIM_TimeBaseConfig(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, &pTimeBaseCfg) != HAL_OK)
 	{
-		/* Starting Error */
-		Error_Handler();
+		_Error_Handler(__FILE__, __LINE__);
 	}
 
-	HAL_TIM_Base_Start_IT(&htim1);
+	pSimplePWMChannelCfg.Pulse = uwPrescalerValue / 2;
+	pSimplePWMChannelCfg.Polarity = HRTIM_OUTPUTPOLARITY_HIGH;
+	pSimplePWMChannelCfg.IdleLevel = HRTIM_OUTPUTIDLELEVEL_INACTIVE;
+	if (HAL_HRTIM_SimplePWMChannelConfig(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_OUTPUT_TA1, &pSimplePWMChannelCfg) != HAL_OK)
+	{
+		_Error_Handler(__FILE__, __LINE__);
+	}
+
+	HAL_HRTIM_SimplePWMStart(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_OUTPUT_TA1);
+	//	  		HAL_HRTIM_SimpleOCStart(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_OUTPUT_TA1);
+	//	  		HAL_HRTIM_SimpleBaseStart_IT(&hhrtim, HRTIM_TIMERINDEX_TIMER_A);
+	//	HAL_HRTIM_SimplePWMStart(&hhrtim, HRTIM_TIMERINDEX_TIMER_B, HRTIM_OUTPUT_TB1);
 }
 
 /* TIM callback --------------------------------------------------------------*/
-void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
-{
-	if (htim == &htim1) //ADC time freq
-	{
-		//		if (cnt % (int)(HI_TIME_FREQ / SAMPLE_TIME_FREQ) == 0)
-		//		{
-		//		}
-		if (color_selector == 0)
-		{
-			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
-		}
-		else if (color_selector == 1)
-		{
-			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
-		}
-		else if (color_selector == 2)
-		{
-			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_SET);
-			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
-		}
-		else
-		{
-			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
-			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
-		}
-
-		if (pixel_cnt == 0)
-		{
-			HAL_GPIO_WritePin(CIS_SP_GPIO_Port, CIS_SP_Pin, GPIO_PIN_SET);
-		}
-		else if (pixel_cnt == 4)
-		{
-			HAL_GPIO_WritePin(CIS_SP_GPIO_Port, CIS_SP_Pin, GPIO_PIN_RESET);;
-		}
-
-		pixel_cnt++;
-		if (pixel_cnt > (ADC_CONVERTED_DATA_BUFFER_SIZE * 2))
-		{
-			pixel_cnt = 0;
-			color_selector++;
-			if (color_selector > 2)
-			{
-				color_selector = 0;
-			}
-		}
-	}
-}
+//void HAL_HRTIM_Compare1EventCallback(HRTIM_HandleTypeDef *htim, uint32_t timerIdx)
+//{
+//	if (htim == &hhrtim) //ADC time freq
+//	{
+//		//		if (cnt % (int)(HI_TIME_FREQ / SAMPLE_TIME_FREQ) == 0)
+//		//		{
+//		//		}
+//		if (color_selector == 0)
+//		{
+//			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_SET);
+//			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
+//		}
+//		else if (color_selector == 1)
+//		{
+//			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_SET);
+//			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
+//		}
+//		else if (color_selector == 2)
+//		{
+//			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_SET);
+//			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
+//		}
+//		else
+//		{
+//			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
+//			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
+//			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
+//		}
+//
+//		if (pixel_cnt == 0)
+//		{
+//			HAL_GPIO_WritePin(CIS_SP_GPIO_Port, CIS_SP_Pin, GPIO_PIN_SET);
+//		}
+//		else if (pixel_cnt == 4)
+//		{
+//			HAL_GPIO_WritePin(CIS_SP_GPIO_Port, CIS_SP_Pin, GPIO_PIN_RESET);;
+//		}
+//
+//		pixel_cnt++;
+//		if (pixel_cnt > (ADC_CONVERTED_DATA_BUFFER_SIZE * 2))
+//		{
+//			pixel_cnt = 0;
+//			color_selector++;
+//			if (color_selector > 2)
+//			{
+//				color_selector = 0;
+//			}
+//		}
+//	}
+//}
 
 ///**
 // * @brief  Conversion complete callback in non-blocking mode

@@ -24,6 +24,7 @@ Src/main.o: ../Src/main.c \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_dac_ex.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_flash.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_flash_ex.h \
+ /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_hrtim.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_hsem.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_i2c.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_i2c_ex.h \
@@ -40,11 +41,10 @@ Src/main.o: ../Src/main.c \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/adc.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/dac.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/dma.h \
+ /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/hrtim.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/tim.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usart.h \
- /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usb_device.h \
- /mnt/Data/Documents/Workspace_AC6/CIS_H7/Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h \
- /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usbd_conf.h \
+ /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usb_otg.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/gpio.h \
  /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/cis.h
 
@@ -98,6 +98,8 @@ Src/main.o: ../Src/main.c \
 
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_flash_ex.h:
 
+/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_hrtim.h:
+
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_hsem.h:
 
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/stm32h7xx_hal_i2c.h:
@@ -130,15 +132,13 @@ Src/main.o: ../Src/main.c \
 
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/dma.h:
 
+/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/hrtim.h:
+
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/tim.h:
 
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usart.h:
 
-/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usb_device.h:
-
-/mnt/Data/Documents/Workspace_AC6/CIS_H7/Middlewares/ST/STM32_USB_Device_Library/Core/Inc/usbd_def.h:
-
-/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usbd_conf.h:
+/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/usb_otg.h:
 
 /mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc/gpio.h:
 

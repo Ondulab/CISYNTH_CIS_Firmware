@@ -58,7 +58,7 @@ void TIM1_UP_IRQHandler(void);
 void TIM1_TRG_COM_IRQHandler(void);
 void TIM1_CC_IRQHandler(void);
 void TIM6_DAC_IRQHandler(void);
-void OTG_FS_IRQHandler(void);
+void HRTIM1_TIMA_IRQHandler(void);
 void TIM15_IRQHandler(void);
 
 #ifdef __cplusplus
