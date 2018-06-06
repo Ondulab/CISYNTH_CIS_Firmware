@@ -45,8 +45,8 @@ clean:
 	-@echo ' '
 
 post-build:
-	-@echo 'Generating binary and Printing size information:'
-	arm-none-eabi-objcopy -O binary "CIS_H7.elf" "CIS_H7.bin"
+	-@echo 'Generating hex and Printing size information:'
+	arm-none-eabi-objcopy -O ihex "CIS_H7.elf" "CIS_H7.hex"
 	arm-none-eabi-size "CIS_H7.elf"
 	-@echo ' '
 

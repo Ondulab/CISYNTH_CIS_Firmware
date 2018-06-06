@@ -57,6 +57,14 @@ Src/%.o: ../Src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: MCU GCC Compiler'
 	@echo $(PWD)
+	arm-none-eabi-gcc -mcpu=cortex-m7 -mthumb -mfloat-abi=hard -mfpu=fpv5-d16 '-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32H743xx -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/CMSIS/Device/ST/STM32H7xx/Include" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/CMSIS/Include"  -Og -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -o "$@" "$<"
+	@echo 'Finished building: $<'
+	@echo ' '
+
+Src/main.o: ../Src/main.c
+	@echo 'Building file: $<'
+	@echo 'Invoking: MCU GCC Compiler'
+	@echo $(PWD)
 	arm-none-eabi-gcc -mcpu=cortex-m7 -mthumb -mfloat-abi=hard -mfpu=fpv5-d16 '-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32H743xx -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/CMSIS/Device/ST/STM32H7xx/Include" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/CMSIS/Include"  -O3 -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
