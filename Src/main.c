@@ -152,80 +152,18 @@ int main(void)
   MX_TIM1_Init();
   MX_USB_OTG_FS_PCD_Init();
   /* USER CODE BEGIN 2 */
-	int cnt;
-	int emit = 0;
 	printf("Start CIS Demo\n");
 	HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
 	HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
 
 	cisInit();
-	while(1);
-	DAC_Ch1_EscalatorConfig();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
 	{
-//				switch(emit)
-//				{
-//				case 0 :
-//					HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_SET);
-//					HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
-//					break;
-//				case 1 :
-//					HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_SET);
-//					HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
-//					break;
-//				case 2 :
-//					HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_SET);
-//					HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
-//					break;
-//				}
-//				emit++;
-//				if (emit > 2)
-//					emit = 0;
-
-		HAL_GPIO_WritePin(CIS_START_PULSE_GPIO_Port, CIS_START_PULSE_Pin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(CIS_CLOCK_GPIO_Port, CIS_CLOCK_Pin, GPIO_PIN_SET);
-//		HAL_Delay(1);
-		HAL_GPIO_WritePin(CIS_CLOCK_GPIO_Port, CIS_CLOCK_Pin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(CIS_START_PULSE_GPIO_Port, CIS_START_PULSE_Pin, GPIO_PIN_RESET);
-
-		for(cnt = 0; cnt < 10000; cnt++)
-		{
-			HAL_GPIO_WritePin(CIS_CLOCK_GPIO_Port, CIS_CLOCK_Pin, GPIO_PIN_SET);
-//			HAL_Delay(1);
-			HAL_GPIO_WritePin(CIS_CLOCK_GPIO_Port, CIS_CLOCK_Pin, GPIO_PIN_RESET);
-
-//			/*##-3- Start the conversion process #######################################*/
-//			if (HAL_ADC_Start(&hadc1) != HAL_OK)
-//			{
-//				/* Start Conversation Error */
-//				Error_Handler();
-//			}
-//			if (HAL_ADC_PollForConversion(&hadc1, 1) != HAL_OK)
-//			{
-//				/* End Of Conversion flag not set on time */
-//				Error_Handler();
-//			}
-//			/* Check if the continuous conversion of regular channel is finished */
-//			if ((HAL_ADC_GetState(&hadc1) & HAL_ADC_STATE_EOC_REG) == HAL_ADC_STATE_EOC_REG)
-//			{
-//				/*##-5- Get the converted value of regular channel  ########################*/
-//				HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, HAL_ADC_GetValue(&hadc1) * 2);
-//			}
-
-//			if (!(cnt % 100))
-//			{
-//				if (val > 10000)
-//					printf("1");
-//				else
-//					printf("0");
-//			}
-		}
-//		printf("\n");
   /* USER CODE END WHILE */
 
   /* USER CODE BEGIN 3 */
