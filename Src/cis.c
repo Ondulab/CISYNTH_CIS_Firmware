@@ -214,7 +214,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 	if (pixel_cnt > CIS_PIXELS_NB)
 	{
 		pixel_cnt = 0;
-		color_selector++;
+//		color_selector++;
 		if (calib_cnt < 10000)
 			calib_cnt++;
 		if (color_selector > 2)

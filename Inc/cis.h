@@ -10,7 +10,7 @@
 #define __CIS_H__
 
 #define HI_TIME_FREQ 		(600000)
-#define DAC_TIME_FREQ 		(98) // 1Hz to 1Khz
+#define DAC_TIME_FREQ 		(100) // 1Hz to 1Khz
 #define CIS_PIXELS_NB		(1275)
 
 /* Includes ------------------------------------------------------------------*/
