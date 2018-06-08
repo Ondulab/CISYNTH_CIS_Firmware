@@ -22,7 +22,13 @@ extern DAC_HandleTypeDef hdac1;
 /* Private variables ---------------------------------------------------------*/
 __IO static int32_t aADCxConvertedDataDMA = 0;
 __IO static int16_t aADCxConvertedData[CIS_PIXELS_NB] = {0};
+__IO static int16_t redData[CIS_PIXELS_NB] = {0};
+__IO static int16_t greenData[CIS_PIXELS_NB] = {0};
+__IO static int16_t blueData[CIS_PIXELS_NB] = {0};
 __IO static int32_t aADCxConvertedDataOffset[CIS_PIXELS_NB] = {0};
+__IO static int32_t redDataOffset[CIS_PIXELS_NB] = {0};
+__IO static int32_t greenDataOffset[CIS_PIXELS_NB] = {0};
+__IO static int32_t blueDataOffset[CIS_PIXELS_NB] = {0};
 __IO static uint16_t deadZones[TOTAL_DEADZONE] = {0};
 
 const uint32_t aEscalator16bit[32] = {0x111, 0x222, 0x333, 0x444, 0x555, 0x666, 0x777, 0x888,
@@ -89,7 +95,7 @@ void cisInit(void)
 	while(1)
 	{
 		printf("ADC_Buf = ");
-		for(int cnt = 0; cnt < CIS_PIXELS_NB; cnt += 30)
+		for(int cnt = 0; cnt < CIS_PIXELS_NB - TOTAL_DEADZONE; cnt += 30)
 		{
 			printf("%d  ", (int)aADCxConvertedData[cnt]);
 			//			printf("%d  ", (int)aADCxConvertedDataOffset[cnt]);
@@ -115,19 +121,19 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 
 	if (!colorIsSet)
 	{
-		if (color_selector == 0)
+		if (color_selector == RED)
 		{
 			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_SET);
 			colorIsSet = 1;
 		}
-		else if (color_selector == 1)
+		else if (color_selector == GREEN)
 		{
 			HAL_GPIO_WritePin(CIS_LED_R_GPIO_Port, CIS_LED_R_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_SET);
 			colorIsSet = 1;
 		}
-		else if (color_selector == 2)
+		else if (color_selector == BLUE)
 		{
 			HAL_GPIO_WritePin(CIS_LED_G_GPIO_Port, CIS_LED_G_Pin, GPIO_PIN_RESET);
 			HAL_GPIO_WritePin(CIS_LED_B_GPIO_Port, CIS_LED_B_Pin, GPIO_PIN_SET);
@@ -163,15 +169,63 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 		{
 			if (calib_cnt < 100)
 			{
-				aADCxConvertedDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] += (aADCxConvertedDataDMA >> 1);
-				aADCxConvertedDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] /= 2;
+				switch (color_selector)
+				{
+				case RED :
+					redDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] += (aADCxConvertedDataDMA >> 1);
+					redDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] /= 2;
+					break;
+				case GREEN :
+					greenDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] += (aADCxConvertedDataDMA >> 1);
+					greenDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] /= 2;
+					break;
+				case BLUE :
+					blueDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] += (aADCxConvertedDataDMA >> 1);
+					blueDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] /= 2;
+					break;
+				default :
+					aADCxConvertedDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] += (aADCxConvertedDataDMA >> 1);
+					aADCxConvertedDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] /= 2;
+					break;
+				}
 			}
 			else
 			{
-				/* Read the converted value */
-				aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = ((aADCxConvertedDataDMA >> 1) - aADCxConvertedDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]);
-				if (aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] < 0)
-					aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET -deadZone_cnt] = 0;
+				switch (color_selector)
+				{
+				case RED :
+					redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = ((aADCxConvertedDataDMA >> 1) - redDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]);
+					if (redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] < 0)
+						redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = 0;
+					break;
+				case GREEN :
+					greenData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = ((aADCxConvertedDataDMA >> 1) - greenDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]);
+					if (greenData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] < 0)
+						greenData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = 0;
+					break;
+				case BLUE :
+					blueData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = ((aADCxConvertedDataDMA >> 1) - blueDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]);
+					if (blueData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] < 0)
+						blueData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = 0;
+					break;
+				default :
+					aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = ((aADCxConvertedDataDMA >> 1) - aADCxConvertedDataOffset[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]);
+					if (aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] < 0)
+						aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET -deadZone_cnt] = 0;
+					break;
+				}
+#ifndef BLACK_AND_WITHE
+				if ((redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] - redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] - redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]) < 0)
+				{
+					aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = 	redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] -
+																						redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] -
+																						redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt];
+				}
+				else
+				{
+					aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = 0;
+				}
+#endif
 			}
 		}
 		else
@@ -227,7 +281,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 void timesBaseInit(void)
 {
 	TIM_MasterConfigTypeDef sMasterConfig;
-//	TIM_OC_InitTypeDef sConfigOC;
+	//	TIM_OC_InitTypeDef sConfigOC;
 
 	uint32_t uwPrescalerValue = 0;
 
