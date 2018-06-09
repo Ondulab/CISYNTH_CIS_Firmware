@@ -96,7 +96,7 @@ Drivers/STM32H7xx_HAL_Driver/Src/%.o: ../Drivers/STM32H7xx_HAL_Driver/Src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: MCU GCC Compiler'
 	@echo $(PWD)
-	arm-none-eabi-gcc -mcpu=cortex-m7 -mthumb -mfloat-abi=hard -mfpu=fpv5-d16 '-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32H743xx -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Inc" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/CMSIS/Device/ST/STM32H7xx/Include" -I"/mnt/Data/Documents/Workspace_AC6/CIS_H7/Drivers/CMSIS/Include"  -Og -g -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -o "$@" "$<"
+	arm-none-eabi-gcc -mcpu=cortex-m7 -mthumb -mfloat-abi=hard -mfpu=fpv5-d16 '-D__weak=__attribute__((weak))' '-D__packed="__attribute__((__packed__))"' -DUSE_HAL_DRIVER -DSTM32H743xx -I"/mnt/Data/Documents/Workspace_AC6/CISYNTH/Inc" -I"/mnt/Data/Documents/Workspace_AC6/CISYNTH/Drivers/STM32H7xx_HAL_Driver/Inc" -I"/mnt/Data/Documents/Workspace_AC6/CISYNTH/Drivers/STM32H7xx_HAL_Driver/Inc/Legacy" -I"/mnt/Data/Documents/Workspace_AC6/CISYNTH/Drivers/CMSIS/Device/ST/STM32H7xx/Include" -I"/mnt/Data/Documents/Workspace_AC6/CISYNTH/Drivers/CMSIS/Include"  -Og -g -Wall -fmessage-length=0 -ffunction-sections -c -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 
