@@ -7,6 +7,7 @@
  */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32h7xx_hal.h"
+#include "stdlib.h"
 
 #include "tim.h"
 #include "cis.h"
@@ -22,14 +23,18 @@ extern DAC_HandleTypeDef hdac1;
 /* Private variables ---------------------------------------------------------*/
 __IO static int32_t aADCxConvertedDataDMA = 0;
 __IO static int16_t aADCxConvertedData[CIS_PIXELS_NB] = {0};
-__IO static int16_t redData[CIS_PIXELS_NB] = {0};
-__IO static int16_t greenData[CIS_PIXELS_NB] = {0};
-__IO static int16_t blueData[CIS_PIXELS_NB] = {0};
-__IO static int32_t aADCxConvertedDataOffset[CIS_PIXELS_NB] = {0};
-__IO static int32_t redDataOffset[CIS_PIXELS_NB] = {0};
-__IO static int32_t greenDataOffset[CIS_PIXELS_NB] = {0};
-__IO static int32_t blueDataOffset[CIS_PIXELS_NB] = {0};
-__IO static uint16_t deadZones[TOTAL_DEADZONE] = {0};
+
+__IO static int16_t redData[CIS_PIXELS_NB + 1000] = {0};
+__IO static int16_t greenData[CIS_PIXELS_NB + 1000] = {0};
+__IO static int16_t blueData[CIS_PIXELS_NB + 1000] = {0};
+
+__IO static int16_t aADCxConvertedDataOffset[CIS_PIXELS_NB] = {0};
+
+__IO static int16_t redDataOffset[CIS_PIXELS_NB + 1000] = {0};
+__IO static int16_t greenDataOffset[CIS_PIXELS_NB + 1000] = {0};
+__IO static int16_t blueDataOffset[CIS_PIXELS_NB + 1000] = {0};
+
+__IO static uint16_t deadZones[TOTAL_DEADZONE + 1000] = {0};
 
 const uint32_t aEscalator16bit[32] = {0x111, 0x222, 0x333, 0x444, 0x555, 0x666, 0x777, 0x888,
 		0x999, 0xAAA, 0xBBB, 0xCCC, 0xDDD, 0xEEE, 0xFFF, 0xEEE,
@@ -39,8 +44,11 @@ static __IO uint32_t pixel_cnt = 0;
 static __IO uint16_t color_selector = 0;
 static __IO uint32_t calib_cnt = 1;
 
+TIM_MasterConfigTypeDef sMasterConfig;
+
 /* Private function prototypes -----------------------------------------------*/
 void timesBaseInit(void);
+void setDacCarrier(int freq);
 
 void cisInit(void)
 {
@@ -92,17 +100,50 @@ void cisInit(void)
 
 	timesBaseInit();
 
+	int redVal = 0;
+	int firstMax = 0;
+	int oldRedVal = 0;
+
+	HAL_Delay(2000);
 	while(1)
 	{
-		printf("ADC_Buf = ");
-		for(int cnt = 0; cnt < CIS_PIXELS_NB - TOTAL_DEADZONE; cnt += 30)
+		//		printf("ADC_Buf = ");
+		//		for(int cnt = 0; cnt < CIS_PIXELS_NB - TOTAL_DEADZONE; cnt += 30)
+		//		{
+		//			printf("%d  ", (int)aADCxConvertedData[cnt]);
+		//			//			printf("%d  ", (int)aADCxConvertedDataOffset[cnt]);
+		//		}
+		//		//		printf("%d  ", (int)pixel_cnt);
+		//		printf("\n");
+
+		int time = (redData[500]/4);
+		if (time > 100)
+			time = 100;
+		if (time < 10)
+			time = 10;
+		HAL_Delay(time);
+
+		//		for (int i = 0; i < (CIS_PIXELS_NB - TOTAL_DEADZONE); i++)
+		//		{
+		//			redVal += redData[i];
+		//		}
+		//		redVal /= 5 * (CIS_PIXELS_NB - TOTAL_DEADZONE);
+
+		redVal = redData[15];
+				redVal /= 3;
+		if (redVal < 20)
+			redVal = 20;
+		if (redVal > 800)
+			redVal = 800;
+		if (redVal != oldRedVal)
 		{
-			printf("%d  ", (int)aADCxConvertedData[cnt]);
-			//			printf("%d  ", (int)aADCxConvertedDataOffset[cnt]);
+			setDacCarrier(redVal);
+			oldRedVal = redVal;
 		}
-		//		printf("%d  ", (int)pixel_cnt);
+		printf("%d  ", (int)redData[500]);
+		printf("%d  ", (int)redData[150]);
+		printf("%d  ", (int)redVal);
 		printf("\n");
-		HAL_Delay(100);
 	}
 }
 
@@ -215,16 +256,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 					break;
 				}
 #ifndef BLACK_AND_WITHE
-				if ((redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] - redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] - redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]) < 0)
-				{
-					aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = 	redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] -
-																						redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] -
-																						redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt];
-				}
-				else
-				{
-					aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = 0;
-				}
+				aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = (redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] +
+						greenData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] +
+						blueData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] ) / 3;
 #endif
 			}
 		}
@@ -268,10 +302,39 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
  * @param  htim : TIM handle
  * @retval None
  */
-//void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-//{
-//	pixel_cnt++;
-//}
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	pixel_cnt++;
+}
+
+void setDacCarrier(int freq)
+{
+	uint32_t uwPrescalerValue = 0;
+
+	/* Compute the prescaler value */
+	uwPrescalerValue = (uint32_t) ((SystemCoreClock / 2) / (freq * 10 * CIS_PIXELS_NB));
+
+	HAL_TIM_Base_DeInit(&htim6);
+
+	/*##-1- Configure the TIM peripheral #######################################*/
+	/* Time base configuration */
+	//	htim6.Instance = TIM6;
+	//	htim6.Init.Period            = 10 - 1;
+	htim6.Init.Prescaler         = uwPrescalerValue;
+	//	htim6.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+	//	htim6.Init.CounterMode       = TIM_COUNTERMODE_UP;
+	//	htim6.Init.RepetitionCounter = 0;
+	HAL_TIM_Base_Init(&htim6);
+
+	//		/* TIM6 TRGO selection */
+	//		sMasterConfig.MasterOutputTrigger = TIM_TRGO_UPDATE;
+	//		sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	//
+	//		HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig);
+
+	/*##-2- Enable TIM peripheral counter ######################################*/
+	HAL_TIM_Base_Start(&htim6);
+}
 
 /**
  * @brief  Period elapsed callback in non blocking mode
@@ -280,9 +343,6 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
  */
 void timesBaseInit(void)
 {
-	TIM_MasterConfigTypeDef sMasterConfig;
-	//	TIM_OC_InitTypeDef sConfigOC;
-
 	uint32_t uwPrescalerValue = 0;
 
 	/* Compute the prescaler value */

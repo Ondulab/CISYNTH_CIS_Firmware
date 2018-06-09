@@ -70,7 +70,7 @@ void MX_HRTIM_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  pTimeBaseCfg.Period = 3200;
+  pTimeBaseCfg.Period = 1600;
   pTimeBaseCfg.RepetitionCounter = 0x00;
   pTimeBaseCfg.PrescalerRatio = HRTIM_PRESCALERRATIO_DIV1;
   pTimeBaseCfg.Mode = HRTIM_MODE_CONTINUOUS;
@@ -97,19 +97,19 @@ void MX_HRTIM_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  pCompareCfg.CompareValue = 1600;
+  pCompareCfg.CompareValue = 800;
   if (HAL_HRTIM_WaveformCompareConfig(&hhrtim, HRTIM_TIMERINDEX_MASTER, HRTIM_COMPAREUNIT_1, &pCompareCfg) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  pCompareCfg.CompareValue = 200;
+  pCompareCfg.CompareValue = 100;
   if (HAL_HRTIM_WaveformCompareConfig(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, HRTIM_COMPAREUNIT_1, &pCompareCfg) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  pTimeBaseCfg.Period = 400;
+  pTimeBaseCfg.Period = 200;
   if (HAL_HRTIM_TimeBaseConfig(&hhrtim, HRTIM_TIMERINDEX_TIMER_A, &pTimeBaseCfg) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -185,9 +185,9 @@ void HAL_HRTIM_MspInit(HRTIM_HandleTypeDef* hrtimHandle)
     __HAL_RCC_HRTIM1_CLK_ENABLE();
 
     /* HRTIM1 interrupt Init */
-    HAL_NVIC_SetPriority(HRTIM1_Master_IRQn, 0, 2);
+    HAL_NVIC_SetPriority(HRTIM1_Master_IRQn, 0, 1);
     HAL_NVIC_EnableIRQ(HRTIM1_Master_IRQn);
-    HAL_NVIC_SetPriority(HRTIM1_TIMA_IRQn, 0, 2);
+    HAL_NVIC_SetPriority(HRTIM1_TIMA_IRQn, 0, 1);
     HAL_NVIC_EnableIRQ(HRTIM1_TIMA_IRQn);
   /* USER CODE BEGIN HRTIM1_MspInit 1 */
 
