@@ -18,6 +18,9 @@
 #define TOTAL_DEADZONE		(SEGMENT_NB * DEADZONE_WIDTH)
 #define PIXEL_CNT_OFFSET	(11)
 
+#define NOTE_ZONE			(100)
+#define VOLUME_ZONE			(100)
+
 #define LED_ON
 //#define BLACK_AND_WITHE
 
