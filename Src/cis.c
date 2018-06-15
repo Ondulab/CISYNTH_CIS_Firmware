@@ -82,14 +82,14 @@ void cisInit(void)
 	//	SCB_CleanDCache();
 
 	/*##-2- Enable DAC selected channel and associated DMA #############################*/
-	if (HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)aADCxConvertedData, CIS_PIXELS_NB - TOTAL_DEADZONE - PIXEL_CNT_OFFSET, DAC_ALIGN_12B_R) != HAL_OK)
+	if (HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t *)aADCxConvertedData + NOTE_ZONE, CIS_PIXELS_NB - TOTAL_DEADZONE - PIXEL_CNT_OFFSET - VOLUME_ZONE, DAC_ALIGN_12B_R) != HAL_OK)
 	{
 		/* Start DMA Error */
 		Error_Handler();
 	}
 
 	/*##-2- Enable DAC selected channel and associated DMA #############################*/
-	if (HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t *)aADCxConvertedData, CIS_PIXELS_NB - TOTAL_DEADZONE - PIXEL_CNT_OFFSET, DAC_ALIGN_12B_R) != HAL_OK)
+	if (HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t *)aADCxConvertedData + NOTE_ZONE, CIS_PIXELS_NB - TOTAL_DEADZONE - PIXEL_CNT_OFFSET - VOLUME_ZONE, DAC_ALIGN_12B_R) != HAL_OK)
 	{
 		/* Start DMA Error */
 		Error_Handler();
@@ -101,40 +101,46 @@ void cisInit(void)
 	timesBaseInit();
 
 	int redVal = 0;
+	int volume = 0;
 	int firstMax = 0;
 	int oldRedVal = 0;
 
 	HAL_Delay(2000);
 	while(1)
 	{
-		//		printf("ADC_Buf = ");
-		//		for(int cnt = 0; cnt < CIS_PIXELS_NB - TOTAL_DEADZONE; cnt += 30)
-		//		{
-		//			printf("%d  ", (int)aADCxConvertedData[cnt]);
-		//			//			printf("%d  ", (int)aADCxConvertedDataOffset[cnt]);
-		//		}
-		//		//		printf("%d  ", (int)pixel_cnt);
-		//		printf("\n");
+		int i = 0;
+		HAL_Delay(10);
 
-		int time = (redData[500]/4);
-		if (time > 100)
-			time = 100;
-		if (time < 10)
-			time = 10;
-		HAL_Delay(time);
+		for (i = 0; i < VOLUME_ZONE; i++)
+		{
+			volume += (4096 - redData[CIS_PIXELS_NB - TOTAL_DEADZONE - i]);
+		}
+		volume += i;
+		volume /= 1;
+		if (volume < 20)
+			volume = 20;
+		if (volume > 800)
+			volume = 800;
 
-		//		for (int i = 0; i < (CIS_PIXELS_NB - TOTAL_DEADZONE); i++)
-		//		{
-		//			redVal += redData[i];
-		//		}
-		//		redVal /= 5 * (CIS_PIXELS_NB - TOTAL_DEADZONE);
+		for (i = 0; i < CIS_PIXELS_NB; i++)
+		{
+			aADCxConvertedData[i] /= volume;
+		}
 
-		redVal = redData[15];
-				redVal /= 3;
+		for (i = 0; i < NOTE_ZONE; i++)
+		{
+			redVal += (redData[i]);
+		}
+		redVal /= i;
+//		redVal /= 3;
+
+		redVal = redVal - 2000;
+
 		if (redVal < 20)
 			redVal = 20;
 		if (redVal > 800)
 			redVal = 800;
+
 		if (redVal != oldRedVal)
 		{
 			setDacCarrier(redVal);
@@ -256,9 +262,9 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
 					break;
 				}
 #ifndef BLACK_AND_WITHE
-				aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = (redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] +
-						greenData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] +
-						blueData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] ) / 3;
+				aADCxConvertedData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] = ((redData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]) +
+						(greenData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt]) +
+						(blueData[pixel_cnt - PIXEL_CNT_OFFSET - deadZone_cnt] )) / 3;
 #endif
 			}
 		}
