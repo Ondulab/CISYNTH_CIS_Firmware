@@ -170,8 +170,14 @@ void cis_Init()
 #pragma GCC optimize ("unroll-loops")
 void cis_ImageProcessRGB(int32_t *cis_buff)
 {
+#define DEBUG_STAT_LEN 100
+	static uint16_t corr_buff[DEBUG_STAT_LEN]; //TODO : remove, debug
+	static int corr_buff_i = 0;
 	static uint32_t dataOffset_Rx, dataOffset_Gx, dataOffset_Cx, dataOffset_Bx, imageOffset;
 	static int32_t line, i, timeout = 0;
+	float32_t tmp_float [CIS_PIXELS_PER_LINE];
+	int offsets[3];
+	int32_t value_offset;
 
 	// Read and copy half DMAs buffers
 	for (line = CIS_ADC_OUT_LINES; --line >= 0;)
@@ -218,25 +224,31 @@ void cis_ImageProcessRGB(int32_t *cis_buff)
 #ifndef CIS_DESACTIVATE_CALIBRATION
 	for (line = CIS_ADC_OUT_LINES; --line >= 0;)
 	{
-		dataOffset_Rx = (CIS_ADC_BUFF_SIZE * line) + CIS_RED_LINE_OFFSET;									//Rx
-		dataOffset_Gx = (CIS_ADC_BUFF_SIZE * line) + CIS_GREEN_LINE_OFFSET;									//Gx
-		dataOffset_Bx = (CIS_ADC_BUFF_SIZE * line) + CIS_BLUE_LINE_OFFSET;									//Bx
+		offsets[0] = (CIS_ADC_BUFF_SIZE * line) + CIS_RED_LINE_OFFSET;									//Rx
+		offsets[1] = (CIS_ADC_BUFF_SIZE * line) + CIS_GREEN_LINE_OFFSET;								//Gx
+		offsets[2] = (CIS_ADC_BUFF_SIZE * line) + CIS_BLUE_LINE_OFFSET;									//Bx
+		for (int color = 0; color < 3; ++color)
+		{
+			// correct level error
+			arm_mean_q31(&cisDataCpy[offsets[color] - CIS_START_OFFSET], CIS_START_OFFSET, &value_offset); //calculate mean 'dead pixel'
+			value_offset = cisCals.blackCal.data[offsets[color] - CIS_START_OFFSET] - value_offset; // calculate offset from calib
+			corr_buff[corr_buff_i++] = value_offset;
+			if(corr_buff_i >= DEBUG_STAT_LEN)
+			{
 
-		arm_sub_q31(&cisDataCpy[dataOffset_Rx], &cisCals.blackCal.data[dataOffset_Rx], &cisDataCpy[dataOffset_Rx], CIS_PIXELS_PER_LINE);
-		arm_sub_q31(&cisDataCpy[dataOffset_Gx], &cisCals.blackCal.data[dataOffset_Gx], &cisDataCpy[dataOffset_Gx], CIS_PIXELS_PER_LINE);
-		arm_sub_q31(&cisDataCpy[dataOffset_Bx], &cisCals.blackCal.data[dataOffset_Bx], &cisDataCpy[dataOffset_Bx], CIS_PIXELS_PER_LINE);
+			}
+			arm_offset_q31(&cisDataCpy[offsets[color]], value_offset, &cisDataCpy[offsets[color]], CIS_PIXELS_PER_LINE); // apply ofset on other pixels
+			// re-scale
+			arm_sub_q31(&cisDataCpy[offsets[color]], &cisCals.blackCal.data[offsets[color]], &cisDataCpy[offsets[color]], CIS_PIXELS_PER_LINE);
+			arm_q31_to_float(&cisDataCpy[offsets[color]], tmp_float, CIS_PIXELS_PER_LINE);
+			arm_mult_f32(tmp_float, &cisCals.gainsData[offsets[color]], tmp_float, CIS_PIXELS_PER_LINE);
+			arm_float_to_q31(tmp_float, &cisDataCpy[offsets[color]], CIS_PIXELS_PER_LINE);
+			arm_clip_q31(&cisDataCpy[offsets[color]], &cisDataCpy[offsets[color]], 0, 4095, CIS_PIXELS_PER_LINE);
 
-//		arm_offset_q31(&cisDataCpy[dataOffset_Rx], -819, &cisDataCpy[dataOffset_Rx], CIS_PIXELS_PER_LINE);
-//		arm_offset_q31(&cisDataCpy[dataOffset_Gx], -819, &cisDataCpy[dataOffset_Gx], CIS_PIXELS_PER_LINE);
-//		arm_offset_q31(&cisDataCpy[dataOffset_Bx], -819, &cisDataCpy[dataOffset_Bx], CIS_PIXELS_PER_LINE);
+			arm_copy_q31(&cisDataCpy[offsets[color] - CIS_START_OFFSET], &cisDataCpy[offsets[color]], CIS_START_OFFSET);
 
-		arm_mult_f32((float32_t *)(&cisDataCpy[dataOffset_Rx]), &cisCals.gainsData[dataOffset_Rx], (float32_t *)(&cisDataCpy[dataOffset_Rx]), CIS_PIXELS_PER_LINE);
-		arm_mult_f32((float32_t *)(&cisDataCpy[dataOffset_Gx]), &cisCals.gainsData[dataOffset_Gx], (float32_t *)(&cisDataCpy[dataOffset_Gx]), CIS_PIXELS_PER_LINE);
-		arm_mult_f32((float32_t *)(&cisDataCpy[dataOffset_Bx]), &cisCals.gainsData[dataOffset_Bx], (float32_t *)(&cisDataCpy[dataOffset_Bx]), CIS_PIXELS_PER_LINE);
-
-		arm_clip_q31(&cisDataCpy[dataOffset_Rx], &cisDataCpy[dataOffset_Rx], 0, 4095, CIS_PIXELS_PER_LINE);
-		arm_clip_q31(&cisDataCpy[dataOffset_Gx], &cisDataCpy[dataOffset_Gx], 0, 4095, CIS_PIXELS_PER_LINE);
-		arm_clip_q31(&cisDataCpy[dataOffset_Bx], &cisDataCpy[dataOffset_Bx], 0, 4095, CIS_PIXELS_PER_LINE);
+		}
+		printf("\n");
 	}
 #endif
 
@@ -277,6 +289,7 @@ void cis_ImageProcessRGB(int32_t *cis_buff)
 void cis_ImageProcessRGB_Calibration(int32_t *cisCalData, uint16_t iterationNb)
 {
 	static int32_t line, iteration, pix, i, timeout = 0;
+	int offsets[3];
 	shared_var.cis_cal_progressbar = 0;
 
 	memset(cisCalData, 0, CIS_ADC_BUFF_SIZE * 3 * sizeof(uint32_t));
@@ -333,6 +346,22 @@ void cis_ImageProcessRGB_Calibration(int32_t *cisCalData, uint16_t iterationNb)
 #ifdef PRINT_CIS_CALIBRATION
 		printf("Pix = %d, Val = %d\n", (int)pix, (int)cisCalData[pix]);
 #endif
+	}
+
+	// make "deads pixel" precalculation
+	int32_t value_offset;
+	for (line = CIS_ADC_OUT_LINES; --line >= 0;)
+	{
+		offsets[0] = (CIS_ADC_BUFF_SIZE * line) + CIS_RED_LINE_OFFSET;									//Rx
+		offsets[1] = (CIS_ADC_BUFF_SIZE * line) + CIS_GREEN_LINE_OFFSET;								//Gx
+		offsets[2] = (CIS_ADC_BUFF_SIZE * line) + CIS_BLUE_LINE_OFFSET;									//Bx
+		for (int color = 0; color < 3; ++color)
+		{
+			//calculate the dead pixel mean value
+			arm_mean_q31(&cisCalData[offsets[color]] - CIS_START_OFFSET, CIS_START_OFFSET, &value_offset);
+			// copy the mean value to the whole part of 'dead' pixel
+			arm_fill_q31(value_offset, &cisCalData[offsets[color]] - CIS_START_OFFSET, CIS_START_OFFSET);
+		}
 	}
 }
 #pragma GCC pop_options
