@@ -16,6 +16,10 @@
 #include "lwip/tcp.h"
 #include "lwip.h"
 
+#ifdef LWIP_DHCP
+#include "lwip/dhcp.h"
+#endif
+
 #include "icm42688.h"
 
 #include "arm_math.h"
@@ -44,23 +48,23 @@ void udp_clientReceiveCallback(void *arg, struct udp_pcb *upcb, struct pbuf *p, 
 
 /* Private user code ---------------------------------------------------------*/
 
-void udp_clientInit(void)
+void udp_clientInit()
 {
-	ip_addr_t DestIPaddr;
+	ip_addr_t ipaddr;
 	err_t err;
 
-	//	lwiperf_start_tcp_server_default(NULL, NULL); // TCP Perf = iperf -c 192.168.0.1 -i1 -t60 -u -b 1000M UDP Perf = iperf -c 192.168.0.1 -i1 -t60
+	//ip4_addr_t = gnetif.ip_addr.addr;
 
 	/* Create a new UDP control block  */
 	upcb = udp_new();
-	ip_set_option(upcb, SOF_BROADCAST); // test for broadcast, useless at frist view
+
 	if (upcb!=NULL)
 	{
 		/*assign destination IP address */
-		IP4_ADDR( &DestIPaddr, DEST_IP_ADDR0, DEST_IP_ADDR1, DEST_IP_ADDR2, DEST_IP_ADDR3 );
+		IP4_ADDR( &ipaddr, DEST_IP_ADDR0, DEST_IP_ADDR1, DEST_IP_ADDR2, DEST_IP_ADDR3 );
 
 		/* configure destination IP address and port */
-		err= udp_connect(upcb, &DestIPaddr, UDP_SERVER_PORT);
+		err= udp_connect(upcb, &ipaddr, UDP_SERVER_PORT);
 
 		if (err == ERR_OK)
 		{
@@ -83,7 +87,7 @@ void udp_clientInit(void)
 	packet_StartupInfo.packet_id = packetsCounter;
 	sprintf((char *)packet_StartupInfo.version_info, "CISYNTH v3.0 RESO-NANCE");
 
-	udp_clientSendStartupInfoPacket();
+	//udp_clientSendStartupInfoPacket();
 }
 
 void udp_sendData(void *data, uint16_t length)

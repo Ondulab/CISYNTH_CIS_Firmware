@@ -27,7 +27,7 @@ extern "C" {
 /* Exported macro ------------------------------------------------------------*/
 
 /* Exported functions prototypes ---------------------------------------------*/
-void udp_clientInit(void);
+void udp_clientInit();
 void udp_clientSendStartupInfoPacket(void);
 void udp_clientSendPackets(struct packet_Image *rgbBuffers);
 //void udp_clientSendImage(int32_t *image_buff);

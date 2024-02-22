@@ -24,6 +24,10 @@
 
 #include "udp_client.h"
 #include "lwip.h"
+#include "lwip/opt.h"
+#include "lwip/dhcp.h"
+#include "lwip/tcpip.h"
+
 #include "icm42688.h"
 
 #include "sss_Scan.h"

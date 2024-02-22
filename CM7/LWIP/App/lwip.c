@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
  ******************************************************************************
-  * File Name          : LWIP.c
-  * Description        : This file provides initialization code for LWIP
-  *                      middleWare.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2022 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ * File Name          : LWIP.c
+ * Description        : This file provides initialization code for LWIP
+ *                      middleWare.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2022 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
@@ -28,7 +28,10 @@
 #include "ethernetif.h"
 
 /* USER CODE BEGIN 0 */
+
 #include "config.h"
+#include "udp_client.h"
+
 /* USER CODE END 0 */
 /* Private function prototypes -----------------------------------------------*/
 static void ethernet_link_status_updated(struct netif *netif);
@@ -36,7 +39,17 @@ static void Ethernet_Link_Periodic_Handle(struct netif *netif);
 /* ETH Variables initialization ----------------------------------------------*/
 void Error_Handler(void);
 
+/* DHCP Variables initialization ---------------------------------------------*/
+uint32_t DHCPfineTimer = 0;
+uint32_t DHCPcoarseTimer = 0;
 /* USER CODE BEGIN 1 */
+
+#ifdef LWIP_DHCP
+#define MAX_DHCP_TRIES  4
+
+
+uint8_t DHCP_state = DHCP_OFF;
+#endif
 
 /* USER CODE END 1 */
 uint32_t EthernetLinkTimer;
@@ -46,74 +59,122 @@ struct netif gnetif;
 ip4_addr_t ipaddr;
 ip4_addr_t netmask;
 ip4_addr_t gw;
-uint8_t IP_ADDRESS[4];
-uint8_t NETMASK_ADDRESS[4];
-uint8_t GATEWAY_ADDRESS[4];
 
 /* USER CODE BEGIN 2 */
+
+#ifdef LWIP_DHCP
+/**
+ * @brief  DHCP_Process_Handle
+ * @param  None
+ * @retval None
+ */
+void DHCP_Process(struct netif *netif)
+{
+	ip_addr_t ipaddr;
+	ip_addr_t netmask;
+	ip_addr_t gw;
+	struct dhcp *dhcp;
+
+	switch (DHCP_state)
+	{
+	case DHCP_START:
+	{
+		ip_addr_set_zero_ip4(&netif->ip_addr);
+		ip_addr_set_zero_ip4(&netif->netmask);
+		ip_addr_set_zero_ip4(&netif->gw);
+		dhcp_start(netif);
+		DHCP_state = DHCP_WAIT_ADDRESS;
+	}
+	break;
+
+	case DHCP_WAIT_ADDRESS:
+	{
+		if (dhcp_supplied_address(netif))
+		{
+			DHCP_state = DHCP_ADDRESS_ASSIGNED;
+		}
+		else
+		{
+			dhcp = (struct dhcp *)netif_get_client_data(netif, LWIP_NETIF_CLIENT_DATA_INDEX_DHCP);
+
+			/* DHCP timeout */
+			if (dhcp->tries > MAX_DHCP_TRIES)
+			{
+				DHCP_state = DHCP_TIMEOUT;
+
+				/* Static address used */
+				IP_ADDR4(&ipaddr, IP_ADDR0 ,IP_ADDR1 , IP_ADDR2 , IP_ADDR3 );
+				IP_ADDR4(&netmask, NETMASK_ADDR0, NETMASK_ADDR1, NETMASK_ADDR2, NETMASK_ADDR3);
+				IP_ADDR4(&gw, GW_ADDR0, GW_ADDR1, GW_ADDR2, GW_ADDR3);
+				netif_set_addr(netif, &ipaddr, &netmask, &gw);
+			}
+		}
+	}
+	break;
+	case DHCP_LINK_DOWN:
+	{
+		DHCP_state = DHCP_OFF;
+	}
+	break;
+	default: break;
+	}
+}
+
+/**
+ * @brief  DHCP periodic check
+ * @param  netif
+ * @retval None
+ */
+void DHCP_Periodic_Handle(struct netif *netif)
+{
+	/* Fine DHCP periodic process every 500ms */
+	if (HAL_GetTick() - DHCPfineTimer >= DHCP_FINE_TIMER_MSECS)
+	{
+		DHCPfineTimer =  HAL_GetTick();
+		/* process DHCP state machine */
+		DHCP_Process(netif);
+	}
+}
+
+#endif
 
 /* USER CODE END 2 */
 
 /**
-  * LwIP initialization function
-  */
+ * LwIP initialization function
+ */
 void MX_LWIP_Init(void)
 {
-  /* IP addresses initialization */
-  IP_ADDRESS[0] = 192;
-  IP_ADDRESS[1] = 168;
-  IP_ADDRESS[2] = 0;
-  IP_ADDRESS[3] = 10;
-  NETMASK_ADDRESS[0] = 255;
-  NETMASK_ADDRESS[1] = 255;
-  NETMASK_ADDRESS[2] = 255;
-  NETMASK_ADDRESS[3] = 0;
-  GATEWAY_ADDRESS[0] = 0;
-  GATEWAY_ADDRESS[1] = 0;
-  GATEWAY_ADDRESS[2] = 0;
-  GATEWAY_ADDRESS[3] = 0;
+	/* Initilialize the LwIP stack without RTOS */
+	lwip_init();
 
-/* USER CODE BEGIN IP_ADDRESSES */
-  IP_ADDRESS[0] = IP_ADDR0;
-  IP_ADDRESS[1] = IP_ADDR1;
-  IP_ADDRESS[2] = IP_ADDR2;
-  IP_ADDRESS[3] = IP_ADDR3;
-  NETMASK_ADDRESS[0] = NETMASK_ADDR0;
-  NETMASK_ADDRESS[1] = NETMASK_ADDR1;
-  NETMASK_ADDRESS[2] = NETMASK_ADDR2;
-  NETMASK_ADDRESS[3] = NETMASK_ADDR3;
-  GATEWAY_ADDRESS[0] = GW_ADDR0;
-  GATEWAY_ADDRESS[1] = GW_ADDR1;
-  GATEWAY_ADDRESS[2] = GW_ADDR2;
-  GATEWAY_ADDRESS[3] = GW_ADDR3;
+	/* IP addresses initialization with DHCP (IPv4) */
+	ipaddr.addr = 0;
+	netmask.addr = 0;
+	gw.addr = 0;
 
-/* USER CODE END IP_ADDRESSES */
+	/* add the network interface (IPv4/IPv6) without RTOS */
+	netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
 
-  /* Initilialize the LwIP stack without RTOS */
-  lwip_init();
+	/* Registers the default network interface */
+	netif_set_default(&gnetif);
 
-  /* IP addresses initialization without DHCP (IPv4) */
-  IP4_ADDR(&ipaddr, IP_ADDRESS[0], IP_ADDRESS[1], IP_ADDRESS[2], IP_ADDRESS[3]);
-  IP4_ADDR(&netmask, NETMASK_ADDRESS[0], NETMASK_ADDRESS[1] , NETMASK_ADDRESS[2], NETMASK_ADDRESS[3]);
-  IP4_ADDR(&gw, GATEWAY_ADDRESS[0], GATEWAY_ADDRESS[1], GATEWAY_ADDRESS[2], GATEWAY_ADDRESS[3]);
+	/* We must always bring the network interface up connection or not... */
+	netif_set_up(&gnetif);
 
-  /* add the network interface (IPv4/IPv6) without RTOS */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
+	/* Set the link callback function, this function is called on change of link status*/
+	netif_set_link_callback(&gnetif, ethernet_link_status_updated);
 
-  /* Registers the default network interface */
-  netif_set_default(&gnetif);
+	/* Create the Ethernet link handler thread */
 
-  /* We must always bring the network interface up connection or not... */
-  netif_set_up(&gnetif);
+	/* Start DHCP negotiation for a network interface (IPv4) */
+	//dhcp_start(&gnetif);
 
-  /* Set the link callback function, this function is called on change of link status*/
-  netif_set_link_callback(&gnetif, ethernet_link_status_updated);
+	/* USER CODE BEGIN 3 */
 
-  /* Create the Ethernet link handler thread */
+	//ethernet_link_status_updated(&gnetif);
 
-/* USER CODE BEGIN 3 */
-
-/* USER CODE END 3 */
+	/* USER CODE END 3 */
 }
 
 #ifdef USE_OBSOLETE_USER_CODE_SECTION_4
@@ -124,23 +185,24 @@ void MX_LWIP_Init(void)
 #endif
 
 /**
-  * @brief  Ethernet Link periodic check
-  * @param  netif
-  * @retval None
-  */
+ * @brief  Ethernet Link periodic check
+ * @param  netif
+ * @retval None
+ */
 static void Ethernet_Link_Periodic_Handle(struct netif *netif)
 {
-/* USER CODE BEGIN 4_4_1 */
-/* USER CODE END 4_4_1 */
+	/* USER CODE BEGIN 4_4_1 */
+	/* USER CODE END 4_4_1 */
 
-  /* Ethernet Link every 100ms */
-  if (HAL_GetTick() - EthernetLinkTimer >= 100)
-  {
-    EthernetLinkTimer = HAL_GetTick();
-    ethernet_link_check_state(netif);
-  }
-/* USER CODE BEGIN 4_4 */
-/* USER CODE END 4_4 */
+	/* Ethernet Link every 100ms */
+	if (HAL_GetTick() - EthernetLinkTimer >= 100)
+	{
+		EthernetLinkTimer = HAL_GetTick();
+		ethernet_link_check_state(netif);
+	}
+	/* USER CODE BEGIN 4_4 */
+
+	/* USER CODE END 4_4 */
 }
 
 /**
@@ -156,38 +218,50 @@ static void Ethernet_Link_Periodic_Handle(struct netif *netif)
  */
 void MX_LWIP_Process(void)
 {
-/* USER CODE BEGIN 4_1 */
-/* USER CODE END 4_1 */
-  ethernetif_input(&gnetif);
+	/* USER CODE BEGIN 4_1 */
+	/* USER CODE END 4_1 */
+	ethernetif_input(&gnetif);
 
-/* USER CODE BEGIN 4_2 */
-/* USER CODE END 4_2 */
-  /* Handle timeouts */
-  sys_check_timeouts();
+	/* USER CODE BEGIN 4_2 */
 
-  Ethernet_Link_Periodic_Handle(&gnetif);
+	/* USER CODE END 4_2 */
+	/* Handle timeouts */
+	sys_check_timeouts();
 
-/* USER CODE BEGIN 4_3 */
-/* USER CODE END 4_3 */
+	Ethernet_Link_Periodic_Handle(&gnetif);
+
+	/* USER CODE BEGIN 4_3 */
+#ifdef LWIP_DHCP
+	DHCP_Periodic_Handle(&gnetif);
+#endif
+	/* USER CODE END 4_3 */
 }
 
 /**
-  * @brief  Notify the User about the network interface config status
-  * @param  netif: the network interface
-  * @retval None
-  */
+ * @brief  Notify the User about the network interface config status
+ * @param  netif: the network interface
+ * @retval None
+ */
 static void ethernet_link_status_updated(struct netif *netif)
 {
-  if (netif_is_up(netif))
-  {
-/* USER CODE BEGIN 5 */
-/* USER CODE END 5 */
-  }
-  else /* netif is down */
-  {
-/* USER CODE BEGIN 6 */
-/* USER CODE END 6 */
-  }
+	if (netif_is_up(netif))
+	{
+		/* USER CODE BEGIN 5 */
+#ifdef LWIP_DHCP
+		/* Update DHCP state machine */
+		DHCP_state = DHCP_START;
+#endif
+		/* USER CODE END 5 */
+	}
+	else /* netif is down */
+	{
+		/* USER CODE BEGIN 6 */
+#ifdef LWIP_DHCP
+		/* Update DHCP state machine */
+		DHCP_state = DHCP_LINK_DOWN;
+#endif
+		/* USER CODE END 6 */
+	}
 }
 
 #if defined ( __CC_ARM )  /* MDK ARM Compiler */
@@ -199,13 +273,13 @@ static void ethernet_link_status_updated(struct netif *netif)
  */
 sio_fd_t sio_open(u8_t devnum)
 {
-  sio_fd_t sd;
+	sio_fd_t sd;
 
-/* USER CODE BEGIN 7 */
-  sd = 0; // dummy code
-/* USER CODE END 7 */
+	/* USER CODE BEGIN 7 */
+	sd = 0; // dummy code
+	/* USER CODE END 7 */
 
-  return sd;
+	return sd;
 }
 
 /**
@@ -218,8 +292,8 @@ sio_fd_t sio_open(u8_t devnum)
  */
 void sio_send(u8_t c, sio_fd_t fd)
 {
-/* USER CODE BEGIN 8 */
-/* USER CODE END 8 */
+	/* USER CODE BEGIN 8 */
+	/* USER CODE END 8 */
 }
 
 /**
@@ -235,12 +309,12 @@ void sio_send(u8_t c, sio_fd_t fd)
  */
 u32_t sio_read(sio_fd_t fd, u8_t *data, u32_t len)
 {
-  u32_t recved_bytes;
+	u32_t recved_bytes;
 
-/* USER CODE BEGIN 9 */
-  recved_bytes = 0; // dummy code
-/* USER CODE END 9 */
-  return recved_bytes;
+	/* USER CODE BEGIN 9 */
+	recved_bytes = 0; // dummy code
+	/* USER CODE END 9 */
+	return recved_bytes;
 }
 
 /**
@@ -254,12 +328,12 @@ u32_t sio_read(sio_fd_t fd, u8_t *data, u32_t len)
  */
 u32_t sio_tryread(sio_fd_t fd, u8_t *data, u32_t len)
 {
-  u32_t recved_bytes;
+	u32_t recved_bytes;
 
-/* USER CODE BEGIN 10 */
-  recved_bytes = 0; // dummy code
-/* USER CODE END 10 */
-  return recved_bytes;
+	/* USER CODE BEGIN 10 */
+	recved_bytes = 0; // dummy code
+	/* USER CODE END 10 */
+	return recved_bytes;
 }
 #endif /* MDK ARM Compiler */
 
