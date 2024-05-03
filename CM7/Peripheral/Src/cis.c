@@ -25,8 +25,6 @@
 
 #include "arm_math.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
 #include "tim.h"
 #include "adc.h"
 #include "dma.h"

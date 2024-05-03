@@ -18,11 +18,11 @@
  */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
+#include "app_threadx.h"
 #include "main.h"
-#include "cmsis_os.h"
 #include "crc.h"
 #include "dma.h"
-#include "fatfs.h"
+#include "eth.h"
 #include "rng.h"
 #include "spi.h"
 #include "tim.h"
@@ -76,7 +76,6 @@ int MX25test(void);
 void SystemClock_Config(void);
 void PeriphCommonClock_Config(void);
 static void MPU_Config(void);
-void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -92,6 +91,7 @@ void MX_FREERTOS_Init(void);
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -102,7 +102,8 @@ int main(void)
 
   /* MPU Configuration--------------------------------------------------------*/
   MPU_Config();
-/* Enable the CPU Cache */
+
+  /* Enable the CPU Cache */
 
   /* Enable I-Cache---------------------------------------------------------*/
   SCB_EnableICache();
@@ -162,8 +163,8 @@ int main(void)
   MX_RNG_Init();
   MX_CRC_Init();
   MX_SPI2_Init();
-  MX_FATFS_Init();
   MX_TIM6_Init();
+  MX_ETH_Init();
   /* USER CODE BEGIN 2 */
 
   printf("                                        @                                       \n");
@@ -213,13 +214,10 @@ int main(void)
 
   /* USER CODE END 2 */
 
-  /* Call init function for freertos objects (in freertos.c) */
-  MX_FREERTOS_Init();
-
-  /* Start scheduler */
-  osKernelStart();
+  MX_ThreadX_Init();
 
   /* We should never get here as control is now taken by the scheduler */
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
 	while (1)
@@ -399,7 +397,7 @@ static void Fill_Test_Pattern(uint8_t *buffer, uint32_t size)
 }
 /* USER CODE END 4 */
 
-/* MPU Configuration */
+ /* MPU Configuration */
 
 void MPU_Config(void)
 {

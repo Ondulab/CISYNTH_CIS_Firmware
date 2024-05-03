@@ -18,9 +18,6 @@
 #include "shared.h"
 #include "stdio.h"
 
-#include "ff.h" // FATFS include
-#include "diskio.h" // DiskIO include
-
 #include "file_manager.h"
 
 const struct shared_config DefaultConfig =
